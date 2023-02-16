@@ -3,8 +3,10 @@
 """
 
 from formatters.base import BaseCitationFormatter
-from formatters.models import BookModel, InternetResourceModel, ArticlesCollectionModel
-from formatters.styles.gost import GOSTBook, GOSTInternetResource, GOSTCollectionArticle
+from formatters.models import BookModel, InternetResourceModel, ArticlesCollectionModel, ArticleMagazineModel, \
+    DissertationModel
+from formatters.styles.gost import GOSTBook, GOSTInternetResource, GOSTCollectionArticle, GOSTArticleMagazine, \
+    GOSTArticleDissertation
 
 
 class TestGOST:
@@ -28,7 +30,7 @@ class TestGOST:
         )
 
     def test_internet_resource(
-        self, internet_resource_model_fixture: InternetResourceModel
+            self, internet_resource_model_fixture: InternetResourceModel
     ) -> None:
         """
         Тестирование форматирования интернет-ресурса.
@@ -44,8 +46,43 @@ class TestGOST:
             == "Наука как искусство // Ведомости URL: https://www.vedomosti.ru (дата обращения: 01.01.2021)."
         )
 
+    def test_articles_magazine(
+            self, articles_magazine_model_fixture: ArticleMagazineModel
+    ) -> None:
+        """
+        Тестирование форматирования статьи из журнала.
+
+        :param ArticleMagazineModel articles_magazine_model_fixture: Фикстура модели статьи из журнала
+        :return:
+        """
+
+        model = GOSTArticleMagazine(articles_magazine_model_fixture)
+
+        assert (
+            model.formatted
+            == "Иванов И.М., Петров С.Н. Наука как искусство // Сборник научных трудов. 2020. № 10. С. 25-30."
+        )
+
+    def test_dissertation(
+            self, dissertation_model_fixture: DissertationModel
+    ) -> None:
+        """
+        Тестирование форматирования диссертации.
+
+        :param DissertationModel dissertation_model_fixture: Фикстура модели диссертации
+        :return:
+        """
+
+        model = GOSTArticleDissertation(dissertation_model_fixture)
+
+        assert (
+            model.formatted
+            == "Иванов И.М. Наука как искусство: дис. ... "
+            "д-р. / канд. экон.: 01.01.01 СПб., 2020. 199 с."
+        )
+
     def test_articles_collection(
-        self, articles_collection_model_fixture: ArticlesCollectionModel
+            self, articles_collection_model_fixture: ArticlesCollectionModel
     ) -> None:
         """
         Тестирование форматирования сборника статей.
@@ -58,14 +95,17 @@ class TestGOST:
 
         assert (
             model.formatted
-            == "Иванов И.М., Петров С.Н. Наука как искусство // Сборник научных трудов. – СПб.: АСТ, 2020. – С. 25-30."
+            == "Иванов И.М., Петров С.Н. Наука как искусство // "
+            "Сборник научных трудов. – СПб.: АСТ, 2020. – С. 25-30."
         )
 
     def test_citation_formatter(
-        self,
-        book_model_fixture: BookModel,
-        internet_resource_model_fixture: InternetResourceModel,
-        articles_collection_model_fixture: ArticlesCollectionModel,
+            self,
+            book_model_fixture: BookModel,
+            internet_resource_model_fixture: InternetResourceModel,
+            articles_collection_model_fixture: ArticlesCollectionModel,
+            articles_magazine_model_fixture: ArticleMagazineModel,
+            dissertation_model_fixture: DissertationModel,
     ) -> None:
         """
         Тестирование функции итогового форматирования списка источников.
@@ -73,6 +113,8 @@ class TestGOST:
         :param BookModel book_model_fixture: Фикстура модели книги
         :param InternetResourceModel internet_resource_model_fixture: Фикстура модели интернет-ресурса
         :param ArticlesCollectionModel articles_collection_model_fixture: Фикстура модели сборника статей
+        :param ArticleMagazineModel articles_magazine_model_fixture: Фикстура статьи из журнала
+        :param DissertationModel dissertation_model_fixture: Фикстура модели диссертации
         :return:
         """
 
@@ -80,10 +122,14 @@ class TestGOST:
             GOSTBook(book_model_fixture),
             GOSTInternetResource(internet_resource_model_fixture),
             GOSTCollectionArticle(articles_collection_model_fixture),
+            GOSTArticleMagazine(articles_magazine_model_fixture),
+            GOSTArticleDissertation(dissertation_model_fixture),
         ]
         result = BaseCitationFormatter(models).format()
 
         # тестирование сортировки списка источников
-        assert result[0] == models[2]
-        assert result[1] == models[0]
-        assert result[2] == models[1]
+        assert result[0] == models[4]
+        assert result[1] == models[3]
+        assert result[2] == models[2]
+        assert result[3] == models[0]
+        assert result[4] == models[1]

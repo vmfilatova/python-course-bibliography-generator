@@ -5,10 +5,10 @@ from string import Template
 
 from pydantic import BaseModel
 
-from formatters.models import BookModel, InternetResourceModel, ArticlesCollectionModel
+from formatters.models import BookModel, InternetResourceModel, \
+    ArticlesCollectionModel, ArticleMagazineModel, DissertationModel
 from formatters.styles.base import BaseCitationStyle
 from logger import get_logger
-
 
 logger = get_logger(__name__)
 
@@ -27,7 +27,6 @@ class GOSTBook(BaseCitationStyle):
         )
 
     def substitute(self) -> str:
-
         logger.info('Форматирование книги "%s" ...', self.data.title)
 
         return self.template.substitute(
@@ -64,7 +63,6 @@ class GOSTInternetResource(BaseCitationStyle):
         )
 
     def substitute(self) -> str:
-
         logger.info('Форматирование интернет-ресурса "%s" ...', self.data.article)
 
         return self.template.substitute(
@@ -79,7 +77,6 @@ class GOSTCollectionArticle(BaseCitationStyle):
     """
     Форматирование для статьи из сборника.
     """
-
     data: ArticlesCollectionModel
 
     @property
@@ -89,7 +86,6 @@ class GOSTCollectionArticle(BaseCitationStyle):
         )
 
     def substitute(self) -> str:
-
         logger.info('Форматирование сборника статей "%s" ...', self.data.article_title)
 
         return self.template.substitute(
@@ -103,6 +99,61 @@ class GOSTCollectionArticle(BaseCitationStyle):
         )
 
 
+class GOSTArticleMagazine(BaseCitationStyle):
+    """
+    Форматирование для статьи из журнала.
+    """
+
+    data: ArticleMagazineModel
+
+    @property
+    def template(self) -> Template:
+        return Template(
+            "$authors $article_title // $magazine_title. $year. № $number. С. $pages."
+        )
+
+    def substitute(self) -> str:
+        logger.info('Форматирование статьи из журнала "%s" ...', self.data.article_title)
+
+        return self.template.substitute(
+            authors=self.data.authors,
+            article_title=self.data.article_title,
+            magazine_title=self.data.magazine_title,
+            year=self.data.year,
+            number=self.data.number,
+            pages=self.data.pages,
+        )
+
+
+class GOSTArticleDissertation(BaseCitationStyle):
+    """
+    Форматирование для диссертации.
+    """
+
+    data: DissertationModel
+
+    @property
+    def template(self) -> Template:
+        return Template(
+            "$authors $title_dissertation: дис. ... $doc_or_cand $branch_sciences: $code $city, $year. $pages с."
+        )
+
+    def substitute(self) -> str:
+        logger.info('Форматирование диссертации "%s" ...', self.data.title_dissertation)
+
+        return self.template.substitute(
+            authors=self.data.authors,
+            title_dissertation=self.data.title_dissertation,
+            doc_or_cand=self.data.doc_or_cand,
+            branch_sciences=self.data.branch_sciences,
+            code=self.data.code,
+            city=self.data.city,
+            year=self.data.year,
+            pages=self.data.pages,
+
+        )
+
+
 class GOSTCitationFormatter:
     """
     Базовый класс для итогового форматирования списка источников.
@@ -112,6 +163,9 @@ class GOSTCitationFormatter:
         BookModel.__name__: GOSTBook,
         InternetResourceModel.__name__: GOSTInternetResource,
         ArticlesCollectionModel.__name__: GOSTCollectionArticle,
+        ArticleMagazineModel.__name__: GOSTArticleMagazine,
+        DissertationModel.__name__: GOSTArticleDissertation,
+
     }
 
     def __init__(self, models: list[BaseModel]) -> None:
